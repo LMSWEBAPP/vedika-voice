@@ -1,0 +1,99 @@
+.transcriptContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 540px;
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.turnBubble {
+  display: flex;
+  flex-direction: column;
+  max-width: 80%;
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  line-height: 1.5;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.aiBubble {
+  align-self: flex-start;
+  background: rgba(79, 70, 229, 0.12);
+  border: 1px solid rgba(79, 70, 229, 0.25);
+  color: var(--foreground);
+}
+
+.userBubble {
+  align-self: flex-end;
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  color: var(--foreground);
+}
+
+.bubbleSpeaker {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.aiSpeaker {
+  color: #818cf8;
+}
+
+.userSpeaker {
+  color: #22d3ee;
+}
+
+.bubbleTime {
+  font-size: 10px;
+  color: var(--foreground-subtle);
+  margin-top: 6px;
+  align-self: flex-end;
+}
+
+.answersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.answerCard {
+  background: var(--background-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.answerQuestion {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground-muted);
+  margin-bottom: 8px;
+}
+
+.answerValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.answerMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-size: 12px;
+}

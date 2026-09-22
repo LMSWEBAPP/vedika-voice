@@ -1,0 +1,77 @@
+.agentBuilderGrid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .agentBuilderGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.testerContainer {
+  background: var(--background-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 90px;
+}
+
+.waveformCanvas {
+  height: 80px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 16px;
+  overflow: hidden;
+}
+
+.waveBar {
+  width: 4px;
+  height: 6px;
+  background: var(--primary);
+  border-radius: var(--radius-full);
+  transition: height 0.1s ease;
+}
+
+.waveBarActive {
+  background: linear-gradient(180deg, var(--accent-cyan), var(--primary));
+  animation: waveBar 0.8s infinite ease-in-out;
+}
+
+.questionItem {
+  background: var(--background-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.questionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.conditionBox {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px dashed rgba(99, 102, 241, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #a5b4fc;
+}

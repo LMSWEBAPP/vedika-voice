@@ -1,0 +1,21 @@
+{
+  "name": "veyra-voice",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Veyra Voice - Production-Oriented AI Outbound Voice Calling Platform",
+  "scripts": {
+    "dev:web": "npm run dev --prefix apps/web",
+    "build:web": "npm run build --prefix apps/web",
+    "start:web": "npm run start --prefix apps/web",
+    "lint:web": "npm run lint --prefix apps/web"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Veyra Voice Engineering",
+  "license": "UNLICENSED"
+}

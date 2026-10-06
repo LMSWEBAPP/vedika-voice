@@ -1,14 +1,18 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppLayout } from "../../components/layout/AppLayout";
 import { Header } from "../../components/layout/Header";
 import { CsvUploadModal } from "../../features/leads/components/CsvUploadModal";
 import { CreateLeadModal } from "../../features/leads/components/CreateLeadModal";
+import { LeadsSpreadsheetGrid, SpreadsheetLead } from "../../features/leads/components/LeadsSpreadsheetGrid";
 import { leadsApi, campaignsApi, callsApi } from "../../lib/api";
-import { Plus, Upload, Search, PhoneCall, ShieldAlert, ShieldCheck, Check, User } from "lucide-react";
+import { Plus, Upload, Search, PhoneCall, ShieldAlert, ShieldCheck, Check, User, FileSpreadsheet, Table } from "lucide-react";
 
 export default function LeadsPage() {
+  const router = useRouter();
+  const [viewMode, setViewMode] = useState<"table" | "spreadsheet">("spreadsheet");
   const [leads, setLeads] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,7 +82,25 @@ export default function LeadsPage() {
         title="Lead Management"
         subtitle="Manage customer contact lists, upload CSV datasets, and enforce Do-Not-Call compliance"
         actions={
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <div style={{ display: "flex", background: "var(--background-secondary)", borderRadius: "var(--radius-sm)", padding: "2px", border: "1px solid var(--border)" }}>
+              <button
+                onClick={() => setViewMode("spreadsheet")}
+                className={`btn btn-sm ${viewMode === "spreadsheet" ? "btn-primary" : "btn-secondary"}`}
+                style={{ fontSize: "12px", padding: "4px 10px", display: "flex", alignItems: "center", gap: "5px" }}
+              >
+                <FileSpreadsheet size={13} />
+                <span>Excel Spreadsheet Grid</span>
+              </button>
+              <button
+                onClick={() => setViewMode("table")}
+                className={`btn btn-sm ${viewMode === "table" ? "btn-primary" : "btn-secondary"}`}
+                style={{ fontSize: "12px", padding: "4px 10px", display: "flex", alignItems: "center", gap: "5px" }}
+              >
+                <Table size={13} />
+                <span>CRM Table</span>
+              </button>
+            </div>
             <button onClick={() => setCsvOpen(true)} className="btn btn-secondary btn-sm">
               <Upload size={14} />
               <span>Import CSV</span>
@@ -92,6 +114,15 @@ export default function LeadsPage() {
       />
 
       <main style={{ padding: "32px", maxWidth: "1440px", margin: "0 auto" }}>
+        {viewMode === "spreadsheet" && (
+          <LeadsSpreadsheetGrid
+            onCallNow={(lead: SpreadsheetLead) => {
+              router.push(`/voice-agent?clientName=${encodeURIComponent(lead.name)}&businessName=${encodeURIComponent(lead.company)}&businessType=${encodeURIComponent(lead.industry)}&pitchGoal=${encodeURIComponent(lead.pitchGoal)}&notes=${encodeURIComponent(lead.notes)}&city=${encodeURIComponent(lead.city)}&dealValue=${encodeURIComponent(lead.dealValue)}&phone=${encodeURIComponent(lead.phone)}`);
+            }}
+          />
+        )}
+        {viewMode === "table" && (
+        <>
         {/* Search & Filter Bar */}
         <div className="card" style={{ marginBottom: "24px", padding: "16px 20px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", alignItems: "center" }}>
@@ -213,6 +244,8 @@ export default function LeadsPage() {
             </table>
           </div>
         </div>
+        </>
+        )}
 
         <CsvUploadModal
           isOpen={csvOpen}

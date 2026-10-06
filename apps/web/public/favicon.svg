@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="veyraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#veyraGrad)" />
+  <path d="M16 7C14.34 7 13 8.34 13 10V16C13 17.66 14.34 19 16 19C17.66 19 19 17.66 19 16V10C19 8.34 17.66 7 16 7Z" fill="white" />
+  <path d="M9 14V16C9 19.87 12.13 23 16 23C19.87 23 23 19.87 23 16V14H21V16C21 18.76 18.76 21 16 21C13.24 21 11 18.76 11 16V14H9Z" fill="white" fill-opacity="0.9" />
+  <rect x="15" y="23" width="2" height="4" rx="1" fill="white" />
+</svg>

@@ -9,6 +9,7 @@ import {
   Users,
   PhoneCall,
   Bot,
+  Calendar,
   BarChart3,
   Settings,
   Radio,
@@ -17,9 +18,11 @@ import styles from "../../styles/layout.module.css";
 
 const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Appointments", href: "/appointments", icon: Calendar },
   { label: "Campaigns", href: "/campaigns", icon: Megaphone },
   { label: "Leads", href: "/leads", icon: Users },
   { label: "Call History", href: "/calls", icon: PhoneCall },
+  { label: "Live Outbound Studio", href: "/voice-agent", icon: Radio },
   { label: "Agent Builder & Live Mic", href: "/agent-builder", icon: Bot },
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "Settings", href: "/settings", icon: Settings },
@@ -56,12 +59,11 @@ export const Sidebar: React.FC = () => {
 
       <div className={styles.sidebarFooter}>
         <div className={styles.userCard}>
-          <div className={styles.userAvatar}>AM</div>
-          <div style={{ overflow: "hidden" }}>
-            <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--foreground)" }}>Alex Mercer</div>
-            <div style={{ fontSize: "11px", color: "var(--foreground-muted)", display: "flex", alignItems: "center", gap: "6px" }}>
-              <span className="pulse-indicator" />
-              <span>Sim Mode Active</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%" }}>
+            <span className="pulse-indicator" />
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--foreground)" }}>Veyra Voice Engine</span>
+              <span style={{ fontSize: "11px", color: "var(--foreground-muted)" }}>Online • Simulation Ready</span>
             </div>
           </div>
         </div>

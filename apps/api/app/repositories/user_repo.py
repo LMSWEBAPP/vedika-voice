@@ -14,3 +14,9 @@ class UserRepository(BaseRepository[User]):
             select(User).filter(User.email == email.lower().strip())
         )
         return result.scalars().first()
+
+    async def get_first_active(self) -> Optional[User]:
+        result = await self.session.execute(
+            select(User).filter(User.is_active == True)
+        )
+        return result.scalars().first()

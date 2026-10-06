@@ -40,6 +40,11 @@ from app.schemas.analytics import (
     AnalyticsOverviewResponse,
 )
 from app.schemas.webhook import ExotelCallStatusPayload, TelephonyWebhookResponse
+from app.schemas.appointment import (
+    AppointmentCreate,
+    AppointmentUpdate,
+    AppointmentResponse,
+)
 
 __all__ = [
     "UserRegister",
@@ -78,4 +83,7 @@ __all__ = [
     "AnalyticsOverviewResponse",
     "ExotelCallStatusPayload",
     "TelephonyWebhookResponse",
+    "AppointmentCreate",
+    "AppointmentUpdate",
+    "AppointmentResponse",
 ]

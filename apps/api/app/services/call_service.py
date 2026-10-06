@@ -65,10 +65,15 @@ class CallService:
 
         # 4. Initiate via Telephony Provider
         callback_url = f"{settings.TELEPHONY_WEBHOOK_BASE_URL}{settings.API_V1_STR}/webhooks/telephony/call-status"
+        caller_phone = (
+            settings.TWILIO_PHONE_NUMBER
+            if settings.TELEPHONY_PROVIDER == "twilio" and settings.TWILIO_PHONE_NUMBER
+            else settings.EXOTEL_CALLER_ID
+        )
         try:
             telephony_res = await self.telephony_provider.create_call(
                 to_phone=lead.phone,
-                from_phone=settings.EXOTEL_CALLER_ID,
+                from_phone=caller_phone,
                 callback_url=callback_url,
                 custom_data={"call_id": created_call.id},
             )
@@ -207,6 +212,21 @@ class CallService:
                 lead_id=call.lead_id,
                 status=lead_status,
             )
+
+            # Automatically schedule Appointment with reminder if affirmative
+            if is_interested:
+                from app.services.appointment_service import AppointmentService
+                app_service = AppointmentService(self.session)
+                lead_domain = None
+                if call.lead and call.lead.custom_data:
+                    lead_domain = call.lead.custom_data.get("domain")
+                await app_service.create_from_extracted_answers(
+                    lead_id=call.lead_id,
+                    campaign_id=call.campaign_id,
+                    call_id=call.id,
+                    answers=extracted_raw,
+                    lead_domain=lead_domain,
+                )
 
     async def get_call_details(self, call_id: str) -> CallDetailResponse:
         call = await self.call_repo.get_with_details(call_id)

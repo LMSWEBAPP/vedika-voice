@@ -1,0 +1,274 @@
+Listed directory V0.1
+Listed directory Vedika
+Searched for "Ask Vedika"
+Listed directory vedika-ai
+Listed directory ask
+Viewed page.jsx:1-8
+Viewed page.jsx:1-157
+Searched for "GeneralTutor"
+Viewed GeneralTutor.jsx:1-250
+Searched for "VoiceAgentView"
+Searched for "gemini-2.0"
+Viewed voice-server.js:1-150
+Viewed voice-server.js:151-253
+Viewed server-with-ws.js:1-100
+Viewed VoiceAgentView.jsx:1-250
+Viewed VoiceAgentView.jsx:250-500
+Viewed VoiceAgentView.jsx:500-761
+Viewed ChamberOverlay.jsx:1-130
+Viewed ChamberGeometry.js:1-60
+Viewed GeneralTutor.jsx:900-1050
+Viewed VoiceRobotVisualizer.jsx:1-87
+Viewed VoiceChatMessages.jsx:1-100
+Viewed package.json:1-21
+Viewed package.json:1-56
+Viewed RENDER_VOICE_DEPLOYMENT.md:1-82
+Viewed .env:1-28
+Listed directory frontend
+Viewed voice-server.js:1-180
+Viewed voice-server.js:180-357
+Viewed gemini_live.py:1-100
+Viewed gemini_live.py:700-740
+Searched for "model_name"
+Searched for "live.connect"
+Viewed gemini_live.py:680-710
+Viewed gemini_live.py:640-680
+Viewed gemini_live.py:610-640
+Viewed gemini_live.py:560-600
+Viewed gemini_live.py:500-560
+Viewed gemini_live.py:440-500
+Viewed gemini_live.py:380-440
+Viewed gemini_live.py:340-380
+Searched for "self.model_name"
+Searched for "model_name ="
+Searched for "model_name"
+Viewed gemini_live.py:200-250
+Viewed gemini_live.py:1200-1250
+Viewed gemini_live.py:1450-1520
+Viewed main.py:530-600
+Created ask_vedika_voice_tutor_architecture.md
+
+# Reverse Engineering & Architecture Blueprint: Ask Vedika Voice Tutor
+
+The **"Ask Vedika"** voice tutor feature from the website codebase has been reverse engineered into an end-to-end architectural specification. 
+
+A complete, self-contained Markdown blueprint has also been generated as an artifact at:
+**[ask_vedika_voice_tutor_architecture.md](file:///C:/Users/25002/.gemini/antigravity-ide/brain/1e0d5e49-70cf-4ef5-8bbf-c6bd99252559/ask_vedika_voice_tutor_architecture.md)**
+
+Below is the complete architectural guide, including required dependencies, environment inputs, system flow, and implementation details.
+
+---
+
+## 1. System Architecture & Entry Flow
+
+In the project, **Ask Vedika** is structured across two main layers:
+
+1. **The 3D Chamber Hub (`/vedika-ai`)**:
+   - [app/vedika-ai/page.jsx](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/app/vedika-ai/page.jsx)
+   - [engine/ChamberGeometry.js](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/app/vedika-ai/engine/ChamberGeometry.js): Defines Avatar index `0` as **"Ask Vedika"** (Theme: `#39FF14` Neon Green, Route: `/vedika-ai/ask`).
+   - Clicking **"Enter World"** on the hero card navigates to `/vedika-ai/ask`.
+
+2. **The Tutor View (`/vedika-ai/ask`)**:
+   - [app/vedika-ai/ask/page.jsx](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/app/vedika-ai/ask/page.jsx) renders [components/GeneralTutor.jsx](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/components/GeneralTutor.jsx).
+   - In `GeneralTutor.jsx`, there is a header toggle switch: **`[ Text | Voice ]`**.
+   - When toggled to **Voice**, it mounts [components/voice-tutor/VoiceAgentView.jsx](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/components/voice-tutor/VoiceAgentView.jsx).
+
+```mermaid
+graph TD
+    A["Vedika 3D Chamber (/vedika-ai)"] -->|"Select Avatar 0: Ask Vedika"| B["/vedika-ai/ask (GeneralTutor.jsx)"]
+    B -->|"Toggle 'Voice' Tab"| C["VoiceAgentView.jsx"]
+    C -->|"Click 'START SESSION'"| D["Web Audio API (16kHz PCM Capture)"]
+    D -->|"WebSocket ws://.../api/ws"| E["Backend Voice Server (voice-server.js)"]
+    E -->|"Google Gen AI Live Session"| F["Gemini Live Model (gemini-3.1-flash-live-preview)"]
+    F -->|"Direct 24kHz PCM Audio Stream"| E
+    E -->|"Audio Chunks + Transcripts"| C
+    C -->|"AudioContext Destination"| G["Gapless Audio Playback (Speaker)"]
+```
+
+---
+
+## 2. Requirements & Dependencies
+
+To replicate this in a new project, you need the following packages:
+
+### Frontend Dependencies (Next.js / React)
+```bash
+npm install lucide-react three react-markdown remark-gfm
+```
+
+- **`three`**: Used by [`VoiceRobotVisualizer.jsx`](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/components/voice-tutor/VoiceRobotVisualizer.jsx) for the 3D glowing robot head animation that pulses to the conversation state.
+- **`lucide-react`**: UI icons (`Mic`, `Brain`, `Zap`, `ArrowLeft`, etc.).
+- **`react-markdown` & `remark-gfm`**: Real-time rendering of live transcription messages.
+
+### Backend Voice Server Dependencies (Node.js)
+```bash
+npm install @google/genai ws dotenv @upstash/redis express
+```
+
+- **`@google/genai`**: Official Google Gen AI SDK for Node.js (`ai.live.connect`).
+- **`ws`**: High-performance WebSocket server handling raw client audio streams.
+- **`@upstash/redis`**: Persistent conversation history and student memory loading.
+- **`dotenv`**: For loading environment variables.
+
+---
+
+## 3. Environment Variables & Inputs
+
+Create a `.env` file in your project with the following keys:
+
+```env
+# =================================================================
+# GEMINI API KEYS & MODEL CONFIGURATION
+# =================================================================
+# Primary key for Voice Agent
+GEMINI_API_KEY=AIzaSy...
+
+# Optional: Extra keys for load balancing across concurrent sessions
+GEMINI_API_KEY_1=AIzaSy...
+GEMINI_API_KEY_2=AIzaSy...
+GEMINI_API_KEY_3=AIzaSy...
+GEMINI_API_KEY_4=AIzaSy...
+
+# Live Multimodal Model (gemini-3.1-flash-live-preview or gemini-2.0-flash-live-001)
+GEMINI_MODEL=gemini-3.1-flash-live-preview
+
+# =================================================================
+# VOICE SERVER PORTS & ENDPOINTS
+# =================================================================
+PORT=5001
+NODE_ENV=development
+
+# Client target URL (ws:// for local, wss:// for production/Render)
+NEXT_PUBLIC_VOICE_WS_URL=ws://localhost:5001/api/ws
+
+# =================================================================
+# PERSISTENT MEMORY (Optional: Upstash Redis)
+# =================================================================
+UPSTASH_REDIS_REST_URL=https://your-database.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+```
+
+---
+
+## 4. How the Implementation Works (Step-by-Step)
+
+### Step 1: The UI & The "Start Session" Button
+In [`VoiceAgentView.jsx`](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/components/voice-tutor/VoiceAgentView.jsx):
+- When idle, the user sees a large pill button: **`START SESSION`** with a microphone icon.
+- Clicking the button triggers `handleMicToggle()`.
+- State transitions: `disconnected` ➔ `connecting` ➔ `connected` / `tutor-speaking`.
+- While active, the button turns red into **`END SESSION`**.
+- Controls include a **Mute button** (pauses microphone streaming) and a **Clear Log button**.
+
+### Step 2: Microphone Capture & PCM Encoding (16kHz Mono)
+Browsers capture audio at arbitrary rates (e.g. 44.1kHz or 48kHz). Gemini Live requires raw **16,000 Hz, 16-bit mono PCM**:
+
+```javascript
+// 1. Acquire media stream with hardware AEC & noise suppression
+const stream = await navigator.mediaDevices.getUserMedia({
+  audio: { echoCancellation: true, noiseSuppression: true }
+});
+
+// 2. Force AudioContext to 16,000 Hz
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+
+// 3. Buffer audio with ScriptProcessorNode
+const source = audioCtx.createMediaStreamSource(stream);
+const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+source.connect(processor);
+processor.connect(audioCtx.destination);
+
+// 4. Convert Float32 [-1.0, 1.0] to 16-bit signed PCM integers Little-Endian
+processor.onaudioprocess = (e) => {
+  if (ws.readyState !== WebSocket.OPEN || isMuted) return;
+  const float32Data = e.inputBuffer.getChannelData(0);
+  const pcmBuffer = new ArrayBuffer(float32Data.length * 2);
+  const dataView = new DataView(pcmBuffer);
+
+  let offset = 0;
+  for (let i = 0; i < float32Data.length; i++, offset += 2) {
+    let s = Math.max(-1, Math.min(1, float32Data[i]));
+    dataView.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+
+  // Convert buffer to Base64 and send over WebSocket
+  let binary = '';
+  const bytes = new Uint8Array(pcmBuffer);
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  ws.send(JSON.stringify({ type: 'audio', data: btoa(binary) }));
+};
+```
+
+### Step 3: Backend Gemini Live Session
+In [`voice-server.js`](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/voice-server.js):
+- Node.js accepts the WebSocket connection at `/api/ws`.
+- It rotates API keys (`GEMINI_API_KEY_*`) round-robin to avoid free-tier quota limits.
+- Opens a bidirectional session using `ai.live.connect`:
+  ```javascript
+  const geminiSession = await ai.live.connect({
+    model: 'gemini-3.1-flash-live-preview',
+    config: {
+      responseModalities: [Modality.AUDIO],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: { voiceName: 'Zephyr' } // Warm, expressive voice
+        }
+      },
+      systemInstruction: 'Your name is Vedika. You are a warm academic tutor... Keep answers strictly 1-2 short sentences...',
+      outputAudioTranscription: {},
+      inputAudioTranscription: {},
+    },
+    callbacks: {
+      onmessage: (msg) => {
+        // Relays 24kHz audio chunks, transcripts, and interruption signals to browser
+      }
+    }
+  });
+  ```
+- Audio incoming from client WS is passed directly via:
+  ```javascript
+  geminiSession.sendRealtimeInput({
+    audio: { data: msg.data, mimeType: 'audio/pcm;rate=16000' }
+  });
+  ```
+
+### Step 4: The Voice & Persona (`Zephyr`)
+The voice configuration uses **`Zephyr`**:
+- Prebuilt voice provided in Gemini Live API.
+- Configured with a system instruction that instructs it to use natural colloquialisms (*"chalo"*, *"got it ya"*, *"no problem at all"*).
+- Enforces a **1 to 2 sentence response limit** so that voice delivery sounds immediate, crisp, and human rather than robotic or lecturing.
+- Dynamically code-switches between **English, Hindi, Telugu, Hinglish, and Teluglish** based on what the student speaks.
+
+### Step 5: Gapless 24kHz Audio Playback & Barge-In
+Gemini responds with raw **24,000 Hz PCM mono audio**:
+1. **Gapless Audio Scheduling**: The browser converts Base64 chunks to Float32, creates `AudioBuffer` at `24000 Hz`, and schedules playback consecutively using `nextPlayTimeRef = Math.max(audioCtx.currentTime + 0.05, nextPlayTimeRef) + audioBuffer.duration`. This prevents choppy audio clicks.
+2. **Barge-In / Interruption**: When Gemini detects the student speaking while the tutor is talking, Gemini emits `content.interrupted`. The server sends `{ type: 'interrupted' }`, and the browser immediately calls:
+   ```javascript
+   audioSourcesQueueRef.current.forEach(source => { try { source.stop(); } catch {} });
+   audioSourcesQueueRef.current = [];
+   nextPlayTimeRef.current = 0;
+   ```
+
+### Step 6: Visualizer & Sentiment Feedback
+- **3D Robot Visualizer** ([`VoiceRobotVisualizer.jsx`](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/components/voice-tutor/VoiceRobotVisualizer.jsx)): A Three.js wireframe icosahedron head with an inner glowing sphere that bobs and scales dynamically.
+- **Sentiment Analysis**: The backend scans student utterances for keywords across English, Telugu, and Hindi to identify if the student is *Struggling / Confused* (😟), *Happy / Confident* (😊), or *Curious* (🤔), updating the sentiment badge in real time.
+
+---
+
+## 5. Deployment Architecture
+
+For deployment (e.g., Render Free Tier or cloud containers):
+1. **Frontend**: Deployed to Vercel or Node.js host.
+2. **Voice Server**: Deployed as a Node Web Service (e.g. on Render) running `node voice-server.js`.
+3. Set `NEXT_PUBLIC_VOICE_WS_URL=wss://your-voice-server.onrender.com/api/ws` on the frontend.
+4. Render natively proxies `wss://` over port 443 with long-lived WebSocket connections.
+
+---
+
+### Reference Links to Workspace Files
+- **Complete Architecture Specification**: [ask_vedika_voice_tutor_architecture.md](file:///C:/Users/25002/.gemini/antigravity-ide/brain/1e0d5e49-70cf-4ef5-8bbf-c6bd99252559/ask_vedika_voice_tutor_architecture.md)
+- **Frontend Voice Component**: [VoiceAgentView.jsx](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/components/voice-tutor/VoiceAgentView.jsx)
+- **Backend WebSocket Server**: [voice-server.js](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/voice-server.js)
+- **Combined Next.js + WS Server**: [server-with-ws.js](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/server-with-ws.js)
+- **3D Robot Visualizer**: [VoiceRobotVisualizer.jsx](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/components/voice-tutor/VoiceRobotVisualizer.jsx)
+- **Ask Vedika Route**: [app/vedika-ai/ask/page.jsx](file:///c:/Users/25002/Desktop/V0.1/Vedika/vedika/Vyomanta/frontend/app/vedika-ai/ask/page.jsx)

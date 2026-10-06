@@ -44,6 +44,7 @@ class LeadService:
             full_name=data.full_name,
             email=data.email,
             company=data.company,
+            domain=data.domain,
             custom_data=data.custom_data,
             do_not_call=data.do_not_call,
         )
@@ -172,6 +173,7 @@ class LeadService:
             full_name = row.get("full_name") or row.get("name") or row.get("Name") or None
             email = row.get("email") or row.get("Email") or None
             company = row.get("company") or row.get("Company") or None
+            domain = row.get("domain") or row.get("Domain") or row.get("industry") or row.get("Industry") or None
 
             # Check duplicate
             existing = await self.lead_repo.get_by_phone(phone, user_id)
@@ -194,6 +196,7 @@ class LeadService:
                 full_name=full_name,
                 email=email,
                 company=company,
+                domain=domain,
                 do_not_call=dnc_flag,
             )
             created = await self.lead_repo.create(lead)

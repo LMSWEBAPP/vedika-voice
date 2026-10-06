@@ -52,4 +52,12 @@ async def init_db() -> None:
         # Import all models before create_all
         import app.models  # noqa: F401
         await conn.run_sync(Base.metadata.create_all)
+
+        # SQLite safe check for domain column on leads table
+        if "sqlite" in settings.DATABASE_URL:
+            from sqlalchemy import text
+            try:
+                await conn.execute(text("ALTER TABLE leads ADD COLUMN domain VARCHAR(255)"))
+            except Exception:
+                pass  # column already exists
     logger.info("Database tables initialized successfully.")

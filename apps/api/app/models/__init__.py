@@ -6,6 +6,7 @@ from app.models.lead import Lead, CampaignLead
 from app.models.call import Call, CallEvent, CallTranscript, CallAnswer
 from app.models.agent_session import AgentSession
 from app.models.audit_log import AuditLog
+from app.models.appointment import Appointment
 
 __all__ = [
     "Base",
@@ -20,4 +21,5 @@ __all__ = [
     "CallAnswer",
     "AgentSession",
     "AuditLog",
+    "Appointment",
 ]

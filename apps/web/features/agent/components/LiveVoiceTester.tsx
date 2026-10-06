@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Send, Bot, User, Volume2, Sparkles } from "lucide-react";
+import { Mic, MicOff, Send, Bot, User, Volume2, Sparkles, Radio, Zap } from "lucide-react";
+import { VoiceAgentView } from "../../voice-agent/components/VoiceAgentView";
 import styles from "../../../styles/agent.module.css";
 
 interface LiveVoiceTesterProps {
@@ -10,6 +11,7 @@ interface LiveVoiceTesterProps {
 }
 
 export const LiveVoiceTester: React.FC<LiveVoiceTesterProps> = ({ campaignId, script }) => {
+  const [engineMode, setEngineMode] = useState<"live" | "turn-based">("live");
   const [isConnected, setIsConnected] = useState(false);
   const [isMicActive, setIsMicActive] = useState(false);
   const [messages, setMessages] = useState<Array<{ speaker: string; text: string }>>([]);
@@ -18,12 +20,55 @@ export const LiveVoiceTester: React.FC<LiveVoiceTesterProps> = ({ campaignId, sc
 
   const wsRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const stopCurrentAudio = () => {
+    if (currentAudioRef.current) {
+      try {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+      } catch (_) {}
+      currentAudioRef.current = null;
+    }
+    setAiSpeaking(false);
+  };
+
+  const playNeuralAudio = (base64Audio: string) => {
+    if (!base64Audio) return;
+    try {
+      stopCurrentAudio();
+      const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
+      const audio = new Audio(audioUrl);
+      currentAudioRef.current = audio;
+
+      audio.onplay = () => {
+        setAiSpeaking(true);
+      };
+
+      audio.onended = () => {
+        setAiSpeaking(false);
+        currentAudioRef.current = null;
+      };
+
+      audio.onerror = (e) => {
+        console.warn("Audio playback issue:", e);
+        setAiSpeaking(false);
+        currentAudioRef.current = null;
+      };
+
+      audio.play().catch((playErr) => {
+        console.warn("Audio play prevented or interrupted:", playErr);
+        setAiSpeaking(false);
+      });
+    } catch (err) {
+      console.error("Failed to play neural audio", err);
+      setAiSpeaking(false);
+    }
+  };
 
   const startSession = () => {
-    if (!campaignId) return;
-
-    const wsUrl = `ws://localhost:8000/ws/agent/test/${campaignId}`;
+    const targetCampaign = campaignId || "sandbox";
+    const wsUrl = `ws://localhost:8000/ws/agent/test/${targetCampaign}`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
@@ -36,7 +81,6 @@ export const LiveVoiceTester: React.FC<LiveVoiceTesterProps> = ({ campaignId, sc
       try {
         const data = JSON.parse(event.data);
         if (data.type === "ai_text") {
-          setAiSpeaking(true);
           setMessages((prev) => {
             const last = prev[prev.length - 1];
             if (last && last.speaker === "ai") {
@@ -44,11 +88,16 @@ export const LiveVoiceTester: React.FC<LiveVoiceTesterProps> = ({ campaignId, sc
             }
             return [...prev, { speaker: "ai", text: data.text }];
           });
-        } else if (data.type === "turn_complete") {
-          setAiSpeaking(false);
         } else if (data.type === "ai_audio") {
-          // Play simulated audio chime/speech if audioContext available
-          playAudioTone();
+          // Play the ultra-realistic human neural speech
+          if (data.data) {
+            playNeuralAudio(data.data);
+          }
+        } else if (data.type === "turn_complete") {
+          const turnData = data.data || {};
+          if (turnData.audio) {
+            playNeuralAudio(turnData.audio);
+          }
         }
       } catch (err) {
         console.error("WS message parse error", err);
@@ -58,9 +107,11 @@ export const LiveVoiceTester: React.FC<LiveVoiceTesterProps> = ({ campaignId, sc
     ws.onclose = () => {
       setIsConnected(false);
       setIsMicActive(false);
-      setAiSpeaking(false);
+      stopCurrentAudio();
     };
   };
+
+  const recognitionRef = useRef<any>(null);
 
   const endSession = () => {
     if (wsRef.current) {
@@ -68,40 +119,42 @@ export const LiveVoiceTester: React.FC<LiveVoiceTesterProps> = ({ campaignId, sc
       wsRef.current = null;
     }
     stopMic();
+    stopCurrentAudio();
     setIsConnected(false);
-  };
-
-  const playAudioTone = () => {
-    try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-      const ctx = audioContextRef.current;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(440, ctx.currentTime);
-      gain.gain.setValueAtTime(0.05, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.2);
-    } catch (_) {}
   };
 
   const startMic = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setIsMicActive(true);
 
+      // Start Browser Speech Recognition if supported
+      const SpeechRecognition =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = "en-IN";
+        recognition.onresult = (e: any) => {
+          const transcript = e.results[e.results.length - 1][0].transcript;
+          if (transcript.trim() && wsRef.current?.readyState === WebSocket.OPEN) {
+            stopCurrentAudio();
+            wsRef.current.send(JSON.stringify({ type: "text", text: transcript.trim() }));
+            setMessages((prev) => [...prev, { speaker: "user", text: transcript.trim() }]);
+          }
+        };
+        recognition.onerror = () => {};
+        recognition.start();
+        recognitionRef.current = recognition;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
 
       recorder.ondataavailable = async (e) => {
         if (e.data.size > 0 && wsRef.current?.readyState === WebSocket.OPEN) {
           const buffer = await e.data.arrayBuffer();
-          // Convert array buffer to base64
           let binary = "";
           const bytes = new Uint8Array(buffer);
           for (let i = 0; i < bytes.byteLength; i++) {
@@ -112,13 +165,19 @@ export const LiveVoiceTester: React.FC<LiveVoiceTesterProps> = ({ campaignId, sc
         }
       };
 
-      recorder.start(250); // 250ms chunks
+      recorder.start(250);
     } catch (err) {
-      alert("Microphone access could not be initialized. You can still test via text below!");
+      console.warn("Audio hardware stream notice:", err);
     }
   };
 
   const stopMic = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (_) {}
+      recognitionRef.current = null;
+    }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
@@ -131,6 +190,7 @@ export const LiveVoiceTester: React.FC<LiveVoiceTesterProps> = ({ campaignId, sc
     e.preventDefault();
     if (!inputMessage.trim() || !wsRef.current) return;
 
+    stopCurrentAudio();
     wsRef.current.send(JSON.stringify({ type: "text", text: inputMessage.trim() }));
     setMessages((prev) => [...prev, { speaker: "user", text: inputMessage.trim() }]);
     setInputMessage("");
@@ -164,6 +224,110 @@ export const LiveVoiceTester: React.FC<LiveVoiceTesterProps> = ({ campaignId, sc
         </div>
       </div>
 
+      {/* Engine Mode Pill Toggle */}
+      <div
+        style={{
+          display: "flex",
+          background: "var(--background)",
+          padding: "4px",
+          borderRadius: "var(--radius-full)",
+          border: "1px solid var(--border)",
+          gap: "4px",
+          marginTop: "12px",
+          marginBottom: "14px",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            endSession();
+            setEngineMode("live");
+          }}
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            padding: "8px 14px",
+            borderRadius: "var(--radius-full)",
+            fontSize: "12px",
+            fontWeight: 700,
+            border: "none",
+            cursor: "pointer",
+            background: engineMode === "live" ? "var(--primary)" : "transparent",
+            color: engineMode === "live" ? "#ffffff" : "var(--foreground-muted)",
+            boxShadow: engineMode === "live" ? "0 2px 8px rgba(79, 70, 229, 0.4)" : "none",
+            transition: "all 0.15s ease",
+          }}
+        >
+          <Zap size={14} color={engineMode === "live" ? "#39FF14" : "currentColor"} />
+          <span>Gemini Multimodal Live (PCM Audio)</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setEngineMode("turn-based")}
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            padding: "8px 14px",
+            borderRadius: "var(--radius-full)",
+            fontSize: "12px",
+            fontWeight: 600,
+            border: "none",
+            cursor: "pointer",
+            background: engineMode === "turn-based" ? "var(--secondary)" : "transparent",
+            color: engineMode === "turn-based" ? "#ffffff" : "var(--foreground-muted)",
+            transition: "all 0.15s ease",
+          }}
+        >
+          <Radio size={14} />
+          <span>Turn-Based Studio</span>
+        </button>
+      </div>
+
+      {engineMode === "live" ? (
+        <VoiceAgentView
+          inline={true}
+          persona={script?.persona}
+          objective={script?.objective}
+          voiceName={script?.voice_name || "Zephyr"}
+          sessionId={`camp_${campaignId || "sandbox"}`}
+        />
+      ) : (
+        <>
+          {/* Voice Status & Mode Badge */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              fontSize: "12px",
+              background: "rgba(99, 102, 241, 0.08)",
+              padding: "8px 12px",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid rgba(99, 102, 241, 0.2)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--primary)" }}>
+              <Volume2 size={14} />
+              <span>Voice: <strong>{script?.voice_name || "Madhu"}</strong> (Neural Human Audio)</span>
+            </div>
+            {aiSpeaking ? (
+              <span style={{ color: "#34d399", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#34d399", display: "inline-block" }}></span>
+                Speaking...
+              </span>
+            ) : isMicActive ? (
+              <span style={{ color: "#f87171", fontWeight: 600 }}>Listening...</span>
+            ) : (
+              <span style={{ color: "var(--foreground-muted)" }}>Ready</span>
+            )}
+          </div>
+
       {/* Waveform Visualizer Canvas */}
       <div className={styles.waveformCanvas}>
         {[...Array(24)].map((_, i) => (
@@ -172,7 +336,7 @@ export const LiveVoiceTester: React.FC<LiveVoiceTesterProps> = ({ campaignId, sc
             className={`${styles.waveBar} ${(isMicActive || aiSpeaking) ? styles.waveBarActive : ""}`}
             style={{
               animationDelay: `${(i % 8) * 0.1}s`,
-              height: isMicActive || aiSpeaking ? `${Math.max(6, (i * 7) % 36)}px` : "6px",
+              height: isMicActive || aiSpeaking ? `${Math.max(8, (i * 7) % 40)}px` : "6px",
             }}
           />
         ))}
@@ -261,6 +425,8 @@ export const LiveVoiceTester: React.FC<LiveVoiceTesterProps> = ({ campaignId, sc
           <Send size={14} />
         </button>
       </form>
+        </>
+      )}
     </div>
   );
 };

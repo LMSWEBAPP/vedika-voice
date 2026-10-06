@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: Union[str, List[str]] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+        "http://localhost:3002",
+        "http://127.0.0.1:3002",
+        "http://localhost:3003",
+        "http://127.0.0.1:3003",
         "http://localhost:8000",
     ]
 
@@ -44,10 +50,24 @@ class Settings(BaseSettings):
     # AI Provider: 'mock' or 'gemini'
     AI_PROVIDER: str = "mock"
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.0-flash-exp"
-    GEMINI_VOICE_NAME: str = "Aoede"
+    GEMINI_API_KEY_1: str = ""
+    GEMINI_API_KEY_2: str = ""
+    GEMINI_API_KEY_3: str = ""
+    GEMINI_API_KEY_4: str = ""
+    GEMINI_MODEL: str = "gemini-3.1-flash-live-preview"
+    GEMINI_VOICE_NAME: str = "Zephyr"
 
-    # Telephony Provider: 'mock' or 'exotel'
+    def get_gemini_keys(self) -> List[str]:
+        keys = [
+            self.GEMINI_API_KEY,
+            self.GEMINI_API_KEY_1,
+            self.GEMINI_API_KEY_2,
+            self.GEMINI_API_KEY_3,
+            self.GEMINI_API_KEY_4,
+        ]
+        return [k.strip() for k in keys if k and len(k.strip()) > 5]
+
+    # Telephony Provider: 'mock', 'exotel', or 'twilio'
     TELEPHONY_PROVIDER: str = "mock"
     EXOTEL_ACCOUNT_SID: str = ""
     EXOTEL_API_KEY: str = ""
@@ -57,6 +77,11 @@ class Settings(BaseSettings):
     EXOTEL_WEBHOOK_SECRET: str = ""
     TELEPHONY_WEBHOOK_BASE_URL: str = "http://localhost:8000"
 
+    # Twilio Telephony Settings
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_PHONE_NUMBER: str = ""
+
     # Call Defaults
     CALL_MAX_DURATION_SECONDS: int = 600
     SILENCE_TIMEOUT_SECONDS: int = 10
@@ -65,7 +90,7 @@ class Settings(BaseSettings):
     DEFAULT_FALLBACK_LANGUAGE: str = "en"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "apps/api/.env", "../.env"),
         env_file_encoding="utf-8",
         extra="ignore"
     )

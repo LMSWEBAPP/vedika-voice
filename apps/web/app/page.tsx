@@ -8,8 +8,9 @@ import { MetricsOverview } from "../features/dashboard/components/MetricsOvervie
 import { CallsTrendChart } from "../features/dashboard/components/CallsTrendChart";
 import { OutcomesBreakdownChart } from "../features/dashboard/components/OutcomesBreakdownChart";
 import { RecentCallsTable } from "../features/dashboard/components/RecentCallsTable";
-import { analyticsApi, callsApi } from "../lib/api";
-import { Megaphone, Upload, Bot, RefreshCw } from "lucide-react";
+import { UpcomingAppointmentsCard } from "../features/dashboard/components/UpcomingAppointmentsCard";
+import { analyticsApi, callsApi, appointmentsApi } from "../lib/api";
+import { Megaphone, Upload, Bot, RefreshCw, Calendar } from "lucide-react";
 import styles from "../styles/dashboard.module.css";
 
 export default function DashboardPage() {
@@ -17,17 +18,20 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [overview, setOverview] = useState<any>(null);
   const [recentCalls, setRecentCalls] = useState<any[]>([]);
+  const [recentAppointments, setRecentAppointments] = useState<any[]>([]);
 
   const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [analyticsData, callsData] = await Promise.all([
+      const [analyticsData, callsData, appointmentsData] = await Promise.all([
         analyticsApi.getOverview(),
         callsApi.list({ limit: 6 }),
+        appointmentsApi.list({ limit: 5 }),
       ]);
       setOverview(analyticsData);
       setRecentCalls(callsData);
+      setRecentAppointments(appointmentsData);
     } catch (err: any) {
       console.error("Dashboard data load error:", err);
       setError(err.message || "Failed to load dashboard statistics");
@@ -69,6 +73,10 @@ export default function DashboardPage() {
               <Bot size={16} color="var(--primary)" />
               <span>In-Browser Live Mic Tester</span>
             </Link>
+            <Link href="/appointments" className="btn btn-secondary" style={{ borderColor: "rgba(16, 185, 129, 0.4)" }}>
+              <Calendar size={16} color="var(--success)" />
+              <span>Booked Demos ({recentAppointments.length})</span>
+            </Link>
           </div>
         </div>
 
@@ -95,7 +103,10 @@ export default function DashboardPage() {
               <OutcomesBreakdownChart outcomes={overview?.outcomes || []} />
             </div>
 
-            {/* 3. Recent Calls Table */}
+            {/* 3. Upcoming Demo Appointments */}
+            <UpcomingAppointmentsCard appointments={recentAppointments} />
+
+            {/* 4. Recent Calls Table */}
             <RecentCallsTable calls={recentCalls} />
           </div>
         )}

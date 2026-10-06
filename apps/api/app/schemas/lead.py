@@ -21,6 +21,7 @@ class LeadBase(BaseModel):
     full_name: Optional[str] = Field(None, max_length=255)
     email: Optional[EmailStr] = None
     company: Optional[str] = Field(None, max_length=255)
+    domain: Optional[str] = Field(None, max_length=255)
     custom_data: Optional[Dict[str, Any]] = None
     do_not_call: bool = False
 
@@ -34,6 +35,7 @@ class LeadUpdate(BaseModel):
     full_name: Optional[str] = None
     email: Optional[EmailStr] = None
     company: Optional[str] = None
+    domain: Optional[str] = None
     custom_data: Optional[Dict[str, Any]] = None
     do_not_call: Optional[bool] = None
 

@@ -1,12 +1,12 @@
 "use client";
 
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AppLayout } from "../../components/layout/AppLayout";
 import { Header } from "../../components/layout/Header";
 import { LiveVoiceTester } from "../../features/agent/components/LiveVoiceTester";
 import { campaignsApi, agentsApi } from "../../lib/api";
-import { Bot, Plus, Trash2, Save, Sparkles, CheckCircle2 } from "lucide-react";
+import { Bot, Plus, Trash2, Save, Sparkles, CheckCircle2, Volume2 } from "lucide-react";
 import styles from "../../styles/agent.module.css";
 
 function AgentBuilderContent() {
@@ -18,19 +18,66 @@ function AgentBuilderContent() {
   const [voices, setVoices] = useState<any[]>([]);
   const [questionTypes, setQuestionTypes] = useState<any[]>([]);
 
-  // Script State
-  const [persona, setPersona] = useState("Courteous, consultative, and concise executive representative.");
-  const [voiceName, setVoiceName] = useState("Aoede");
-  const [opening, setOpening] = useState("Hello! Thank you for taking my call.");
-  const [objective, setObjective] = useState("Qualify lead interest and team requirements.");
-  const [closing, setClosing] = useState("Thank you very much for your time today. Goodbye!");
+  // Script State (Default: Madhu - Pan-India Software Collective Pitch)
+  const [persona, setPersona] = useState(
+    "Madhu — a courteous, warm, articulate, and gentle Indian female software consultant representing our freelance software development collective."
+  );
+  const [voiceName, setVoiceName] = useState("Madhu");
+  const [opening, setOpening] = useState(
+    "Hello! Good day! This is Madhu calling from our custom software development team. Do you have just a quick minute?"
+  );
+  const [objective, setObjective] = useState(
+    "Understand business bottlenecks, highlight custom software solutions, handle objections gracefully, and book a 15-minute tailored demo."
+  );
+  const [closing, setClosing] = useState(
+    "Thank you so much for your time! We look forward to connecting and showing you how custom software can make your operations more profitable. Have a wonderful day!"
+  );
   const [questions, setQuestions] = useState<any[]>([
-    { id: "q1_interest", text: "Are you interested in automating your outbound calls?", type: "boolean", required: true },
-    { id: "q2_team_size", text: "How many representatives are on your team?", type: "number", required: false },
+    { id: "q1_domain", text: "What domain or industry does your business primarily operate in?", type: "text", required: true },
+    { id: "q2_bottleneck", text: "What is the biggest manual task or software challenge your team faces today?", type: "text", required: true },
+    { id: "q3_interest", text: "Would you be open to a 15-minute demo showing how custom software can save you hours every week?", type: "boolean", required: true },
+    { id: "q4_demo_time", text: "What day and time slot works best for a quick demo call?", type: "text", required: false },
+    { id: "q5_channel", text: "Would you prefer a Google Meet link or a WhatsApp walkthrough?", type: "single_choice", required: false },
   ]);
 
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [previewingVoice, setPreviewingVoice] = useState(false);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handlePreviewVoice = async () => {
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current = null;
+    }
+    setPreviewingVoice(true);
+    try {
+      const sampleText =
+        opening.trim() ||
+        `Hello! Good day! This is Madhu calling from our custom software team. Do you have just a quick minute?`;
+      const res = await agentsApi.synthesizeSpeech({
+        text: sampleText,
+        voice_name: voiceName,
+      });
+      if (res.audio_base64) {
+        const audio = new Audio(`data:audio/mp3;base64,${res.audio_base64}`);
+        previewAudioRef.current = audio;
+        audio.onended = () => {
+          setPreviewingVoice(false);
+          previewAudioRef.current = null;
+        };
+        audio.onerror = () => {
+          setPreviewingVoice(false);
+          previewAudioRef.current = null;
+        };
+        await audio.play();
+      }
+    } catch (err: any) {
+      console.error("Failed to audition voice", err);
+      alert("Voice audition error: " + (err.message || "Failed to generate preview audio"));
+      setPreviewingVoice(false);
+    }
+  };
 
   useEffect(() => {
     async function init() {
@@ -98,14 +145,22 @@ function AgentBuilderContent() {
   };
 
   const handleSave = async () => {
-    if (!selectedCampaignId) {
-      alert("Please select a campaign to attach this script to.");
-      return;
-    }
+    let targetCampaignId = selectedCampaignId;
     setSaving(true);
     setSavedSuccess(false);
     try {
-      await campaignsApi.updateScript(selectedCampaignId, {
+      if (!targetCampaignId) {
+        const newCamp = await campaignsApi.create({
+          name: "Madhu - Cold Calling & Lead Gen",
+          description: "Outbound AI voice calling for custom software development collective.",
+          objective: objective || "Book 15-minute tailored demo",
+          primary_language: "en",
+        });
+        targetCampaignId = newCamp.id;
+        setSelectedCampaignId(newCamp.id);
+        setCampaigns([newCamp, ...campaigns]);
+      }
+      await campaignsApi.updateScript(targetCampaignId, {
         persona,
         voice_name: voiceName,
         opening,
@@ -148,6 +203,9 @@ function AgentBuilderContent() {
                 onChange={(e) => handleCampaignSelect(e.target.value)}
                 style={{ minWidth: "260px" }}
               >
+                {campaigns.length === 0 && (
+                  <option value="">Sandbox Mode (Direct Mic Testing)</option>
+                )}
                 {campaigns.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} ({c.status})
@@ -177,9 +235,32 @@ function AgentBuilderContent() {
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div className="form-group">
-                  <label className="form-label">Voice Synthesis Profile</label>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>Voice Synthesis Profile</label>
+                    <button
+                      type="button"
+                      onClick={handlePreviewVoice}
+                      disabled={previewingVoice}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--primary)",
+                        cursor: previewingVoice ? "not-allowed" : "pointer",
+                        fontSize: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: 0,
+                        fontWeight: 600,
+                      }}
+                    >
+                      <Volume2 size={13} />
+                      <span>{previewingVoice ? "Auditioning..." : "Audition Voice"}</span>
+                    </button>
+                  </div>
                   <select
                     className="form-select"
+                    style={{ marginTop: "6px" }}
                     value={voiceName}
                     onChange={(e) => setVoiceName(e.target.value)}
                   >

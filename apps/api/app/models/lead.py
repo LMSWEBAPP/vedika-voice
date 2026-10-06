@@ -1,9 +1,16 @@
+from __future__ import annotations
+
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.models.base import TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from app.models.call import Call
+    from app.models.campaign import Campaign
+    from app.models.user import User
 
 
 class Lead(Base, TimestampMixin):
@@ -15,6 +22,7 @@ class Lead(Base, TimestampMixin):
     full_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     company: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    domain: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     custom_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     do_not_call: Mapped[bool] = mapped_column(Boolean, default=False, index=True, nullable=False)
 
